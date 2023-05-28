@@ -31,7 +31,7 @@ int currentIndexBottom = 0;
 List<String> links = [
   '',
   'our-doctors',
-  'login',
+  'profile',
   'about',
   'prices',
   'services',
@@ -57,7 +57,7 @@ List<WebViewController> controllers = List.generate(links.length, (index) {
       ),
     )
     ..loadRequest(Uri.parse(baseUrl + links[index]));
-  ;
+  // ;
 });
 
 void main() {

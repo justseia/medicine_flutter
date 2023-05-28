@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:medicine_mobile/drawerToPage.dart';
+// import 'package:medicine_mobile/drawerToPage.dart';
 
-import 'main.dart';
+// import 'main.dart';
 
 List<String> linkNames = [
   'О нас',
