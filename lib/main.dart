@@ -1,11 +1,15 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'dart:io';
-
+import 'dart:convert';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:medicine_mobile/config.dart';
 import 'package:medicine_mobile/drawer.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:medicine_mobile/notification_service.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/tzdata.dart' as tz;
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -18,16 +22,7 @@ class MyHttpOverrides extends HttpOverrides {
 
 int currentIndex = 0;
 int currentIndexBottom = 0;
-// List<String> links = [
-//   'https://www.facebook.com',
-//   'https://www.google.ru/?client=safari&channel=mac_bm',
-//   'https://www.youtube.com',
-//   'https://vc.ru',
-//   'https://www.instagram.com',
-//   'https://kaspi.kz',
-//   'https://vk.com',
-//   'https://dzen.ru/',
-// ];
+
 List<String> links = [
   '',
   'our-doctors',
@@ -45,9 +40,7 @@ List<WebViewController> controllers = List.generate(links.length, (index) {
     ..setBackgroundColor(const Color(0x00000000))
     ..setNavigationDelegate(
       NavigationDelegate(
-        onProgress: (int progress) {
-          // Update loading bar.
-        },
+        onProgress: (int progress) {},
         onPageStarted: (String url) {},
         onPageFinished: (String url) {},
         onWebResourceError: (WebResourceError error) {},
@@ -56,14 +49,14 @@ List<WebViewController> controllers = List.generate(links.length, (index) {
         },
       ),
     )
-    ..loadRequest(Uri.parse(baseUrl + links[index]));
-  // ;
+    ..loadRequest(
+      Uri.parse(baseUrl + links[index]),
+    );
 });
 
-void main() {
+void main() async {
   HttpOverrides.global = new MyHttpOverrides();
-
-  runApp(const MyApp());
+  initializeDateFormatting('ru', null).then((_) => runApp(MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -72,7 +65,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Dental Clinic',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.green,
@@ -90,11 +83,49 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     currentIndex = 0;
+
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    var androidInitializationSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    var iOSInitializationSettings = DarwinInitializationSettings();
+    var initializationSettings = InitializationSettings(
+        android: androidInitializationSettings, iOS: iOSInitializationSettings);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    Future<void> fetchDay() async {
+      try {
+        final response =
+            await http.get(Uri.parse('http://127.0.0.1/api/time/1'));
+        if (response.statusCode == 200) {
+          String day = jsonDecode(response.body)['day'];
+          DateTime dateTime = DateTime.parse(day);
+          String formattedDate =
+              DateFormat('d MMMM yyyy HH:mm', 'ru').format(dateTime);
+          Noti.showBigTextNotification(
+            title: 'Dental Clinic',
+            body: 'Не забудьте запись в $formattedDate',
+            fln: flutterLocalNotificationsPlugin,
+          );
+          Noti.showScheduleNotification(
+            title: 'ReadIT',
+            body: 'У вас запись в $formattedDate',
+            fln: flutterLocalNotificationsPlugin,
+          );
+        } else {
+          throw Exception('Failed to load API data');
+        }
+      } catch (e) {
+        throw Exception('Failed to load API data');
+      }
+    }
+
+    fetchDay();
   }
 
   @override
@@ -110,25 +141,8 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         },
       ),
-      // body: Center(
-      //   child: WebViewWidget(
-      //     controller: controllers[currentIndex],
-      //   ),
-      // ),
-
       body: IndexedStack(
         index: currentIndex,
-        // children: [
-        //   WebViewWidget(
-        //     controller: controllers[0],
-        //   ),
-        //   WebViewWidget(
-        //     controller: controllers[1],
-        //   ),
-        //   WebViewWidget(
-        //     controller: controllers[2],
-        //   ),
-        // ],
         children: List.generate(
           links.length,
           (index) => WebViewWidget(
@@ -136,21 +150,16 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       ),
-
-      // body: WebViewWidget(
-      //   controller: controllers[currentIndex],
-      // ),
-
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05), //color of shadow
-              spreadRadius: 7, //spread radius
-              blurRadius: 10, // blur radius
-              offset: Offset(0, 2), // changes position of shadow
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 7,
+              blurRadius: 10,
+              offset: Offset(0, 2),
             ),
           ],
         ),
