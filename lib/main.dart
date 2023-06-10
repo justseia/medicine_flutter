@@ -101,7 +101,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Future<void> fetchDay() async {
       try {
         final response =
-            await http.get(Uri.parse('http://127.0.0.1/api/time/1'));
+            await http.get(Uri.parse('http://77.240.39.64/api/time/1'));
         if (response.statusCode == 200) {
           String day = jsonDecode(response.body)['day'];
           DateTime dateTime = DateTime.parse(day);
@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
             fln: flutterLocalNotificationsPlugin,
           );
           Noti.showScheduleNotification(
-            title: 'ReadIT',
+            title: 'Dental Clinic',
             body: 'У вас запись в $formattedDate',
             fln: flutterLocalNotificationsPlugin,
           );
